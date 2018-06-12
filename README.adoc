@@ -1,0 +1,5 @@
+= R_tutorial_oak_crest
+
+Introduction to R given at the http://www.oak-crest.org/[Oak Crest Institute of Science] in Monrovia, California. 
+The first session was given on June, 11th, 2018.
+The session was built around data provided by one of the participants.

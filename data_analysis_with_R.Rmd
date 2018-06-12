@@ -1,0 +1,386 @@
+---
+title: "Data Analysis with R"
+author: "Axel Müller, City of Hope"
+date: '`r format(Sys.time())`'
+output:
+  html_notebook:
+    code_folding: show
+    css: custom.css
+    fig_caption: yes
+    fig_height: 6
+    fig_width: 7
+    highlight: tango
+    theme: spacelab
+    toc: yes
+    toc_float: yes
+  html_document:
+    toc: yes
+---
+```{r "setup", include = FALSE}
+
+#some requirements
+library(dplyr)
+library(ggplot2)
+library(readr)
+library(tidyr)
+#library(readxl)
+#library(ggthemes)
+#library(cowplot)
+```
+
+## Intro
+
+R is a language for statistical computing and graphics. In contrast to SAS, matlab, or mathematica it’s free and open source. Hence, an ecosystem of diverse packages continues to expand. These packages are designed to make the R experience better, e.g. the tidyverse packages or data.table, to improve R’s plotting capabilities, most notably 
+ggplot2, or to address the specific needs of countless fields such as: Finance, 
+Astronomy, Linguistics, …, and of course Biology. A lot of biological packages 
+are associated 
+with [Bioconductor](https://www.bioconductor.org/).
+
+
+### Some very useful commands before we get started
+Before we get started I'd like to introduce some basic navigation commands:
+
+    - getwd() will show you your working directory
+    - setwd(“some/path/to/the/directory”) allows you to change the working directory
+    - dir() lists the contents of the working directory.
+
+Three more commands that come in very handy are:
+
+    - ?some_command: This yields help pages for a command
+    - ??some_package: Same as ?some_command but for packages.
+    - str(some_object): Displays the internal structure of an R object
+    
+### Simple math with R
+
+```{r}
+40 + 2
+```
+```{r}
+44 - 2
+```
+```{r}
+6 * 7
+```
+```{r}
+84 / 2
+```
+```{r}
+sqrt(1764)
+```
+
+```{r}
+6.480741**2
+```
+The alternative syntax for this is:
+
+```{r}
+6.480741^2
+```
+
+### Vectors and lists
+
+In R anyting can be assigned to a variable. This is done as follows:
+
+```{r}
+a <- "Hello World"
+b <- 21
+```
+a and b are vectors. Once the assignment took place you can use the variables instead:
+
+```{r}
+a
+```
+
+```{r}
+(b + b)^2
+```
+
+We can also assign more than one item to a vector. 
+
+
+```{r}
+x <- c("meaning of life the universe and everything", 42)
+x
+```
+
+To get the individual elements we use subsetting:
+
+```{r}
+x[1]
+```
+
+```{r}
+x[2]
+```
+
+We can also remove elements from a vector:
+
+```{r}
+x[-2]
+```
+
+
+#### Some little side notes
+
+- If you are familiar with other languages you might be surprised that R is not 0-based and starts numbering with 1.
+- I named the first two vectors a and b. Why didn't I name the third vector c?
+- Two more comments to assigning values to variables. Using the "=" sign instead of
+ "<-" is supported but discouraged. Secondly using Rstudio pressing "Alt -" is a
+ shortcut for "<-".
+
+### Lists
+
+
+Lists are similar to vectors because but they can contain any type of data, including lists. 
+
+```{r}
+y <- list(a, b, x)
+y
+```
+
+Vectors can be turned into list
+```{r}
+z <- list(y)
+typeof(z)
+```
+
+and lists can be turned into vectors:
+
+```{r}
+z <- unlist(z)
+typeof(z)
+```
+
+
+## Analyzing data
+
+In this brief introduction, however, you will learn how to analyze data
+and create compelling graphs with very little background knowledge.
+Let's get started.
+
+
+### Dataframes (and Tibbles)
+
+Dataframes are R's main workhorse. The packages combined in 
+[tidyverse](https://blog.rstudio.org/2016/09/15/tidyverse-1-0-0/) facilitate handling
+these. In the process they are converted to tibbles, but that's a detail we 
+can ignore. 
+
+#### Loading the data
+
+The data we address here comes in the form of csv files. CSV stands for comma 
+separated values. It's basically a text file that looks like this:
+
+> <br/>header1, header2, header3<br/>
+> <br/>value1a, value2a, value3a<br/>
+> <br/>value2a, value2b, value3b<br/>
+> <br/>another_value1, another_value2, another_value3<br/>
+
+We can load the data into a tibble by using the function read_csv, which is part 
+of the readr package. It's also possible to achieve the same with a base R 
+function (read.csv) but the readr
+functions are much faster. Another text-based forman that is often used is tsv,
+tab separated values. TSV files tend to be more human readable and there are 
+equivalent functions in R to load these files. 
+To find out more about read_csv we can execute the 
+following command:
+
+```{r}
+?read_csv
+```
+The data we want to have a closer look at is in the file data.csv.
+The right hand panel of Rstudio has a "Files" tab. It displays all the files 
+in the current directory. Clicking on data.csv will show you the contents of the 
+file. For larger files (and slower computers) it's better not to aim to display the
+entire file though.
+
+```{r}
+# reading the data.csv file
+# we give the path to the file in quotation marks, since we are in the right 
+# directory already we just have to give the filename, we also tell the function
+# that we expects some column names, hence col_names = TRUE
+my_data <- read_csv("md4_data.csv", col_names = TRUE)
+```
+
+Now that the file is loaded we can have a look. There are several ways to do
+this. Rstudio offers an interactive option. In the top right panel there is the 
+Environment tab. Here we see all data and all values that are currently in 
+memory. Clicking on my_data will open a new tab in this panel and allows us to 
+observe the file. We should look for example if the file really has column names
+or if this is not the case. The panel on the right also says that my_data has 
+7 rows and 7 columns. The swiftness of opening and displaying this file
+obviously depends on the size of the file and specs of the computer. 
+
+I would like to encourage you to use tidyverse functions. They are highly optimized and very fast, and 
+the syntax is fairly intuitive:
+The core principle follows along these lines: 
+
+- pick some data
+- perform a task on it
+- perform the next task
+- ...
+- output the results
+
+In this first case we want to take the data and show the first 5 lines:
+
+```{r}
+my_data %>% head(5)
+```
+
+To string the commands together we use the pipe character (%>%) It's so commonly
+used in modern R programming that it has its own keyboard shortcut in Rstudio
+(Shift-Control-M or Shift-Apple-M on macs). 
+
+The process of selecting and manipulating data in a way that suits the analysis 
+is often referred
+to as data-wrangling. Rstudio offers a very good cheat-sheet for this (Checkout Help in the menu).
+
+### Transforming the data
+
+In the current format each row represents one experiment and the first column is the name of the experiment. 
+We want to change it, so that each row represents one time point and the experiment names are used for column names.
+Currently there are no column names assigned, so R used some generic naming.
+
+```{r column names}
+colnames(my_data)
+```
+
+```{r row names}
+rownames(my_data)
+```
+
+#### Subsetting
+
+Earlier we used subsetting for one dimensional data. Now First we set column one as rownames. For this we use a technique called subsetting. 
+
+We get the first column with:
+
+```{r}
+my_data[,1]
+```
+
+To get row values we move the comma to the other side:
+
+```{r}
+# We use [] for subsetting
+my_data[2,]
+```
+
+To get multiple rows:
+
+```{r}
+my_data[c(1,5),]
+```
+
+
+Let's first split the dataframe in experiment names and data, can you do it?
+
+```{r}
+experiment_names <- my_data[,1]
+experiment_names
+```
+
+
+```{r}
+data_only <- my_data[, -1]
+data_only
+```
+
+Now we can turn the dataframe around using the function t()
+
+```{r transformation}
+# in tidyverse style this can also be written as 
+my_data_t <- data_only %>% t 
+my_data_t
+```
+
+Now we have the data oriented the way we want. But can you spot a difference in the representation of my_data and my_data_t?
+A side effect of using the function t() here is that our dataframe got changed into a matrix. Dataframes and matrices are both 
+two dimensional data constructs. The main difference is that dataframes can have different types of data, e.g. numbers and text, matrices can't.
+Another difference is. The tidyverse functions only work with dataframes not with matrices. Let's rewrite the previous commands to take care of this.
+
+```{r}
+# note how we use the assignment operator "<-" 
+my_data_t <- data_only %>% t %>% data.frame()
+my_data_t
+```
+
+Note how we can chained commands together with the pipe command.
+
+The experiment names are still missing, how can we add them?
+
+```{r}
+colnames(my_data_t) <- experiment_names
+my_data_t
+```
+
+This didn't work. Why?
+
+```{r}
+colnames(my_data_t) <- unlist(experiment_names)
+my_data_t
+```
+
+Note: As you have seen some functions can change the type of our data. That can have unexpected consequences.
+
+The time points are now row names. Let's add a new column with the time points.
+
+```{r}
+my_data_t$hours <- rownames(my_data_t)
+my_data_t
+```
+
+Now that the data is in the right format we can go ahead and analyse it
+
+## Data visualization
+
+Let's start by plotting each growth curve. We will use the package ggplot2, which makes of the grammar of graphics concepts. This approach allows the user to layer different features on top of each other to reach the desired outcome. 
+If you go to help menu and expand the cheatsheets option you can select Data Visualization with ggplot2 to get the corresponding pdf.
+
+### The first growth curve
+
+```{r}
+p_md4 <- ggplot(my_data_t, aes(hours, MD4))
+p_md4 + geom_point()
+```
+
+For the time being we skip any regression here, but it would still be nice to have a line connecting the data points.
+
+```{r}
+p1 <- p_md4 + geom_point() + geom_line(aes(group=1))
+p1
+```
+
+We also want to change the axis labels and add a title. 
+
+```{r}
+p1 + ylab("OD600") + xlab("time in hours") + ggtitle("MD4 Growth Curve")
+```
+
+
+Now, wouldn't it be nice to have all the growth curves plotted on the same graph?
+For this to happen we need change the way we present our data.
+Currently our data is in a wide format, that means there are multiple observations per row. In order to get the plot we want we need to change the format to long. 
+If you are interested have a look at [this article](https://vita.had.co.nz/papers/tidy-data.pdf) by Hadley Wickham for a more detailed discussion on tidy data.
+
+### Tidy data
+```{r}
+colnames(my_data_t)[-8]
+tidy_data <- my_data_t %>% gather(condition, OD, colnames(my_data_t)[-8])
+tidy_data
+```
+
+### Combined growth curves
+
+```{r}
+p2 <- ggplot(tidy_data, aes(hours, OD))
+p2 <- p2 + geom_point(aes(colour = factor(condition))) + geom_line(aes(group=condition, color=factor(condition)))
+p2
+```
+
+Now, let's add some finishing touches:
+
+```{r}
+p2 + ggtitle("MD4 Growth Curves") + guides(colour=guide_legend(title="condition"))
+```
+
